@@ -3,7 +3,6 @@ package factory
 import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"runtime"
 	"strings"
 )
 
@@ -30,14 +29,6 @@ const (
 	LvlPanic  LevelNum = 4
 	LvlFatal  LevelNum = 5
 )
-
-type Logging struct {
-	RootName      string            `yaml:"root-name"`
-	RootLevel     string            `yaml:"root-level"`
-	PackageLevels map[string]string `yaml:"package-levels"`
-	Encoder       string            `yaml:"encoder"`
-	LogFileDir    string            `yaml:"log-file-dir"`
-}
 
 type Logger struct {
 	Name     string
@@ -255,11 +246,10 @@ func (logging *LoggerFactory) SetLevels(prefix string, level string) {
 	}
 }
 
-func (logging *LoggerFactory) NewLogger(outPaths []string, errPaths []string) *Logger {
+func (logging *LoggerFactory) NewLogger(callerFile string, outPaths []string, errPaths []string) *Logger {
 	//fmt.Println(fmt.Sprintf("%s, %s, %s, %s", pc, file, line, ok))
 	logger := newLogger("info", outPaths, errPaths)
-	_, f, _, _ := runtime.Caller(1)
-	callerPackage := logging.callerPackage(f)
+	callerPackage := logging.callerPackage(callerFile)
 	logger.Name = callerPackage
 	logger.factory = logging
 	logging.loggers[logger.Name] = logger
