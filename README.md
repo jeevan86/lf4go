@@ -1,123 +1,194 @@
 # lf4go
-
-### config
-```golang
-type Logging struct {
-    RootName      string            `yaml:"root-name"` // RootName is the project-name
-    RootLevel     string            `yaml:"root-level"`
-    PackageLevels map[string]string `yaml:"package-levels"`
-    Encoder       string            `yaml:"encoder"`
-    LogFileDir    string            `yaml:"log-file-dir"`
-}
-```
 ### usage
 #### config.go
 ```go
 type config struct {
-	Logging factory.Logging `yaml:"logging"`
+Logging logging `yaml:"logging"`
+}
+
+type logging struct {
+RootName      string            `yaml:"root-name"`
+RootLevel     string            `yaml:"root-level"`
+PackageLevels map[string]string `yaml:"package-levels"`
+Encoder       string            `yaml:"encoder"`
+LogFileDir    string            `yaml:"log-file-dir"`
+LogFileName   string            `yaml:"log-file-name"`
+LogToStdout   bool              `yaml:"log-to-stdout"`
 }
 
 var configYml = "./config/config.yml"
 var Config = loadConfigYml(configYml)
 
 func loadConfigYml(path string) *config {
-	if len(path) == 0 {
-		path = configYml
-	}
-	yml, err := ioutil.ReadFile(path)
-	if err != nil {
-		fmt.Println(fmt.Sprintf("解析配置错误：%s", err.Error()))
-	}
-	var c = new(config)
-	err = yaml.Unmarshal(yml, c)
-	if err != nil {
-		fmt.Println(fmt.Sprintf("解析配置错误：%s", err.Error()))
-		return nil
-	}
-	return c
+if len(path) == 0 {
+path = configYml
 }
+yml, err := ioutil.ReadFile(path)
+if err != nil {
+fmt.Println(fmt.Sprintf("解析配置错误：%s", err.Error()))
+}
+var c = new(config)
+err = yaml.Unmarshal(yml, c)
+if err != nil {
+fmt.Println(fmt.Sprintf("解析配置错误：%s", err.Error()))
+return nil
+}
+return c
+}
+
 ```
 #### logging.go
 ```go
-var LoggerFactory = factory.NewLoggerFactory(
-	func(caller string) string {
-		projectName := ""
-		rootName := config.Config.Logging.RootName
-		if len(rootName) > 0 {
-			projectName = rootName
-		} else {
-			// 会使用：go.mod文件中的module值 + "/" + 包名
-			myPackage := reflect.TypeOf(EMPTY).PkgPath()
-			projectName = myPackage[:strings.LastIndex(myPackage, "/")]
-		}
-		// 当go.mod文件中的module值，与当前项目的目录名称不一样时，这里会有问题
-		projectNameIdx := strings.Index(caller, projectName)
-		if projectNameIdx < 0 {
-			fmt.Println("FATAL!: 项目名称与go.mod中的module不一致，需手动配置config.yml:logging.root-name为源码项目目录的名称")
-			os.Exit(-1)
-		}
-		callerPackage := caller[projectNameIdx:]
-		firstSlash := strings.Index(callerPackage, SLASH)
-		lastSlash := strings.LastIndex(callerPackage, SLASH)
-		callerPackage = callerPackage[firstSlash:lastSlash]
-		return callerPackage
-	},
+var loggerFactory = factory.NewLoggerFactory(
+func(caller string) string {
+projectName := ""
+rootName := logging.RootName
+if len(rootName) > 0 {
+projectName = rootName
+} else {
+// 会使用：go.mod文件中的module值 + "/" + 包名
+myPackage := reflect.TypeOf(EMPTY).PkgPath()
+projectName = myPackage[:strings.LastIndex(myPackage, "/")]
+}
+// 当go.mod文件中的module值，与当前项目的目录名称不一样时，这里会有问题
+projectNameIdx := strings.Index(caller, projectName)
+if projectNameIdx < 0 {
+fmt.Println("FATAL!: 项目名称与go.mod中的module不一致，需手动配置config.yml:logging.root-name为源码项目目录的名称")
+os.Exit(-1)
+}
+callerPackage := caller[projectNameIdx:]
+firstSlash := strings.Index(callerPackage, SLASH)
+lastSlash := strings.LastIndex(callerPackage, SLASH)
+callerPackage = callerPackage[firstSlash:lastSlash]
+return callerPackage
+},
 )
+
+var NewLogger = func() *factory.Logger {
+_, f, _, _ := runtime.Caller(1)
+return loggerFactory.NewLogger(f, outPaths, errPaths)
+}
 ```
 #### actuator.go
 ```go
-var logger = logging.LoggerFactory.NewLogger([]string{"stdout"}, []string{"stderr"})
+var logger = logging.NewLogger()
+
+var context = "/actuator"
+var loggers = context + "/loggers"
 
 type LogLevel struct {
-	Prefix string `json:"prefix"`
-	Level  string `json:"level"`
+Prefix string `json:"prefix"`
+Level  string `json:"level"`
 }
 
 var body404 = "404"
+var fun404 = func(w http.ResponseWriter, r *http.Request) {
+w.WriteHeader(404)
+_, _ = w.Write(*(*[]byte)(unsafe.Pointer(&body404)))
+}
 var body200 = "200"
 
-type actuatorLoggerUpdate string
+type HttpMethod string
 
-func (h actuatorLoggerUpdate) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	method := r.Method
-	if method == "POST" {
-		body, _ := ioutil.ReadAll(r.Body)
-		logLevel := new(LogLevel)
-		_ = json.Unmarshal(body, logLevel)
-		logger.SetLevels(logLevel.Prefix, logLevel.Level)
-		w.WriteHeader(200)
-		_, _ = w.Write(*(*[]byte)(unsafe.Pointer(&body200)))
-	} else {
-		w.WriteHeader(404)
-		_, _ = w.Write(*(*[]byte)(unsafe.Pointer(&body404)))
-	}
+const (
+GET    HttpMethod = "GET"
+POST   HttpMethod = "POST"
+PUT    HttpMethod = "PUT"
+DELETE HttpMethod = "DELETE"
+PATCH  HttpMethod = "PATCH"
+HEAD   HttpMethod = "HEAD"
+)
+
+type handler struct {
+path   string
+method HttpMethod
+get    func(w http.ResponseWriter, r *http.Request)
+post   func(w http.ResponseWriter, r *http.Request)
+put    func(w http.ResponseWriter, r *http.Request)
+delete func(w http.ResponseWriter, r *http.Request)
+patch  func(w http.ResponseWriter, r *http.Request)
+head   func(w http.ResponseWriter, r *http.Request)
 }
 
-type actuatorLoggerSelect string
-
-func (h actuatorLoggerSelect) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	method := r.Method
-	if method == "POST" {
-		body, _ := ioutil.ReadAll(r.Body)
-		logLevel := new(LogLevel)
-		_ = json.Unmarshal(body, logLevel)
-		outBytes, _ := json.Marshal(logger.GetLevels(logLevel.Prefix))
-		w.WriteHeader(200)
-		_, _ = w.Write(outBytes)
-	} else {
-		w.WriteHeader(404)
-		_, _ = w.Write(*(*[]byte)(unsafe.Pointer(&body404)))
-	}
+func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+switch h.method {
+case GET:
+h.get(w, r)
+break
+case POST:
+h.post(w, r)
+break
+case PUT:
+h.put(w, r)
+break
+case DELETE:
+h.delete(w, r)
+break
+case PATCH:
+h.patch(w, r)
+break
+case HEAD:
+h.head(w, r)
+break
 }
+}
+
+type HttpFunc func(w http.ResponseWriter, r *http.Request)
+
+func trueOrDefault(b bool, f HttpFunc, def HttpFunc) HttpFunc {
+if b {
+return f
+}
+return def
+}
+
+func newHandler(path string, method HttpMethod, f HttpFunc) *handler {
+return &handler{
+path:   path,
+method: method,
+get:    trueOrDefault(method == GET, f, fun404),
+post:   trueOrDefault(method == POST, f, fun404),
+put:    trueOrDefault(method == PUT, f, fun404),
+delete: trueOrDefault(method == DELETE, f, fun404),
+patch:  trueOrDefault(method == PATCH, f, fun404),
+head:   trueOrDefault(method == HEAD, f, fun404),
+}
+}
+
+var actuatorLoggerUpdate = newHandler(
+loggers+"/update",
+POST,
+func(w http.ResponseWriter, r *http.Request) {
+body, _ := ioutil.ReadAll(r.Body)
+logLevel := new(LogLevel)
+_ = json.Unmarshal(body, logLevel)
+logger.SetLevels(logLevel.Prefix, logLevel.Level)
+w.WriteHeader(200)
+_, _ = w.Write(*(*[]byte)(unsafe.Pointer(&body200)))
+},
+)
+
+var actuatorLoggerSelect = newHandler(
+loggers+"/select",
+POST,
+func(w http.ResponseWriter, r *http.Request) {
+body, _ := ioutil.ReadAll(r.Body)
+logLevel := new(LogLevel)
+_ = json.Unmarshal(body, logLevel)
+outBytes, _ := json.Marshal(logger.GetLevels(logLevel.Prefix))
+w.WriteHeader(200)
+_, _ = w.Write(outBytes)
+},
+)
 
 func StartActuator() {
-	go func() {
-		http.Handle("/actuator/loggers/update", actuatorLoggerUpdate("update"))
-		http.Handle("/actuator/loggers/select", actuatorLoggerSelect("select"))
-		err := http.ListenAndServe("127.0.0.1:8630", nil)
-		if err != nil {
-			fmt.Println(err.Error())
-		}
-	}()
+go func() {
+http.Handle(actuatorLoggerUpdate.path, actuatorLoggerUpdate)
+http.Handle(actuatorLoggerSelect.path, actuatorLoggerSelect)
+err := http.ListenAndServe("127.0.0.1:8630", nil)
+if err != nil {
+fmt.Println(err.Error())
+}
+}()
 }
 ```
