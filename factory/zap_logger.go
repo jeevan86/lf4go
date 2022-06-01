@@ -6,19 +6,9 @@ import (
 )
 
 type ZapLogger struct {
-	name    string
-	level   LevelNum
 	config  *zap.Config
 	sink    *zap.Logger
 	factory *ZapLoggerFactory
-}
-
-func (l *ZapLogger) SetLevel(level string) {
-	var atomicLevel zap.AtomicLevel
-	var levelNum LevelNum
-	atomicLevel, levelNum = l.factory.logLevel(level)
-	l.sink = l.factory.setLevel(l.name, atomicLevel)
-	l.level = levelNum
 }
 
 func (l *ZapLogger) Trace(msg string) {

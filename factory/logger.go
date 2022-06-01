@@ -3,16 +3,31 @@ package factory
 import (
 	"fmt"
 	"strings"
+	"time"
 )
 
 var loggers = make(map[string]*Logger)
 
 type Logger struct {
-	Name     string
-	Level    LevelNum
+	Config   *LoggerConfig
 	delegate loggerDelegate
-	outPaths []string
 	factory  *LoggerFactory
+}
+
+type LoggerConfig struct {
+	Name      string
+	Level     LevelNum
+	Formatter string
+	Writer    *WriterConfig
+	OutPaths  []string
+}
+
+type WriterConfig struct {
+	MaxFileSize    int
+	MaxFileBackups int
+	MaxFileAge     time.Duration
+	LocalTime      bool
+	Compress       bool
 }
 
 type loggerDelegate interface {
@@ -34,28 +49,28 @@ func (l *Logger) GetLevels(prefix string) map[string]string {
 }
 
 func (l *Logger) IsTraceEnabled() bool {
-	return l.Level <= LvlTrace
+	return l.Config.Level <= LvlTrace
 }
 func (l *Logger) IsDebugEnabled() bool {
-	return l.Level <= LvlDebug
+	return l.Config.Level <= LvlDebug
 }
 func (l *Logger) IsInfoEnabled() bool {
-	return l.Level <= LvlInfo
+	return l.Config.Level <= LvlInfo
 }
 func (l *Logger) IsWarnEnabled() bool {
-	return l.Level <= LvlWarn
+	return l.Config.Level <= LvlWarn
 }
 func (l *Logger) IsErrorEnabled() bool {
-	return l.Level <= LvlError
+	return l.Config.Level <= LvlError
 }
 func (l *Logger) IsDPanicEnabled() bool {
-	return l.Level <= LvlDPanic
+	return l.Config.Level <= LvlDPanic
 }
 func (l *Logger) IsPanicEnabled() bool {
-	return l.Level <= LvlPanic
+	return l.Config.Level <= LvlPanic
 }
 func (l *Logger) IsFatalEnabled() bool {
-	return l.Level <= LvlFatal
+	return l.Config.Level <= LvlFatal
 }
 
 func (l *Logger) Trace(format string, args ...interface{}) {

@@ -7,18 +7,8 @@ import (
 )
 
 type LogrusLogger struct {
-	name    string
-	level   LevelNum
 	sink    *logrus.Logger
 	factory *LogrusLoggerFactory
-}
-
-func (l *LogrusLogger) SetLevel(level string) {
-	var levelObj logrus.Level
-	var levelNum LevelNum
-	levelObj, levelNum = l.factory.logLevel(level)
-	l.sink = l.factory.setLevel(l.name, levelObj)
-	l.level = levelNum
 }
 
 func (l *LogrusLogger) Trace(msg string) {

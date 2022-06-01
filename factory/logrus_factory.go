@@ -41,19 +41,19 @@ func (lf *LogrusLoggerFactory) fields(elements ...interface{}) []interface{} {
 
 func (lf *LogrusLoggerFactory) setLevel(name string, level logrus.Level) *logrus.Logger {
 	logger := loggers[name]
-	return newLogrusLogger(name, level, logger.outPaths)
+	return lf.newLogrusLogger(logger.Config, level)
 }
 
 func (lf *LogrusLoggerFactory) getLevels(prefix string) map[string]string {
 	levels := make(map[string]string, 16)
 	if "ROOT" == strings.ToUpper(prefix) {
 		for k, logger := range loggers {
-			levels[k] = logLevelName(logger.Level)
+			levels[k] = logLevelName(logger.Config.Level)
 		}
 	} else {
 		for k, logger := range loggers {
 			if strings.HasPrefix(k, prefix) {
-				levels[k] = logLevelName(logger.Level)
+				levels[k] = logLevelName(logger.Config.Level)
 			}
 		}
 	}
@@ -78,45 +78,42 @@ func (lf *LogrusLoggerFactory) setLoggerLevel(logger *Logger, level string) {
 	var logrusLevel logrus.Level
 	var levelNum LevelNum
 	logrusLevel, levelNum = lf.logLevel(level)
-	sink := newLogrusLogger(logger.Name, logrusLevel, logger.outPaths)
+	sink := lf.newLogrusLogger(logger.Config, logrusLevel)
 	delegate := &LogrusLogger{
-		name:    logger.Name,
-		level:   levelNum,
 		sink:    sink,
 		factory: lf,
 	}
-	logger.Level = levelNum
+	logger.Config.Level = levelNum
 	logger.delegate = delegate
 }
 
 // newLogger
 // []string{"stdout", "logs/application.log"},
-func (lf *LogrusLoggerFactory) newLogger(name string, level string, outPaths []string) *Logger {
-	logrusLevel, levelNum := lf.logLevel(level)
-	sink := newLogrusLogger(name, logrusLevel, outPaths)
+func (lf *LogrusLoggerFactory) newLogger(loggerConfig *LoggerConfig) *Logger {
+	logrusLevel, _ := lf.logLevel(logLevelName(loggerConfig.Level))
+	sink := lf.newLogrusLogger(loggerConfig, logrusLevel)
 	delegate := &LogrusLogger{
-		name:    name,
-		level:   levelNum,
 		sink:    sink,
 		factory: lf,
 	}
-	loggers[name] = &Logger{
-		Name:     name,
-		Level:    levelNum,
+	return &Logger{
+		Config:   loggerConfig,
 		delegate: delegate,
-		outPaths: outPaths,
 	}
-	return loggers[name]
 }
 
-type hook string
+type logrusHook string
 
-func (h hook) Levels() []logrus.Level {
+func (h logrusHook) Levels() []logrus.Level {
 	return logrus.AllLevels
 }
-func (h hook) Fire(entry *logrus.Entry) error {
-	pc, file, line, _ := runtime.Caller(10)
-	lastStashIdx := strings.LastIndex(file, "/")
+
+const hookFireFuncSkip = 10 // function Fire may invoke 10th order.
+const slash = "/"
+
+func (h logrusHook) Fire(entry *logrus.Entry) error {
+	pc, file, line, _ := runtime.Caller(hookFireFuncSkip)
+	lastStashIdx := strings.LastIndex(file, slash)
 	if lastStashIdx >= 0 {
 		file = string(h) + ":" + file[lastStashIdx+1:]
 	} else {
@@ -130,8 +127,8 @@ func (h hook) Fire(entry *logrus.Entry) error {
 	return nil
 }
 
-func newHook(name string) logrus.LevelHooks {
-	var allLevelHook = hook(name)
+func (lf *LogrusLoggerFactory) newHook(name string) logrus.LevelHooks {
+	var allLevelHook = logrusHook(name)
 	var allLevelHooks = []logrus.Hook{allLevelHook}
 	return logrus.LevelHooks{
 		logrus.TraceLevel: allLevelHooks,
@@ -144,31 +141,14 @@ func newHook(name string) logrus.LevelHooks {
 	}
 }
 
-var formatter = &logrus.TextFormatter{
-	ForceColors:               false,
-	DisableColors:             true,
-	ForceQuote:                false,
-	EnvironmentOverrideColors: false,
-	DisableTimestamp:          false,
-	FullTimestamp:             true,
-	TimestampFormat:           DTFormatNormal,
-	DisableSorting:            true,
-	SortingFunc:               nil,
-	DisableLevelTruncation:    true,
-	PadLevelText:              true,
-	QuoteEmptyFields:          true,
-	FieldMap:                  nil,
-	CallerPrettyfier:          nil,
-}
-
 // newLogrusLogger
 // []string{"stdout", "logs/application.log"},
-func newLogrusLogger(name string, level logrus.Level, outputs []string) *logrus.Logger {
-	merged := writer(name, outputs)
+func (lf *LogrusLoggerFactory) newLogrusLogger(loggerConfig *LoggerConfig, level logrus.Level) *logrus.Logger {
+	merged := writer(loggerConfig.Name, loggerConfig.Writer, loggerConfig.OutPaths)
 	delegate := &logrus.Logger{
 		Out:          merged,
-		Hooks:        newHook(name),
-		Formatter:    formatter,
+		Hooks:        lf.newHook(loggerConfig.Name),
+		Formatter:    logrusFormatter(loggerConfig.Formatter),
 		ReportCaller: true, // set to false will cause entry.HasCaller() return false, wtf!
 		Level:        level,
 		// ExitFunc exitFunc, // Function to exit the application, defaults to `os.Exit()`

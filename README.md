@@ -1,5 +1,24 @@
 # lf4go
 ### usage
+#### config.yml
+```yaml
+logging:
+  factory: logrus # zap | logrus
+  root-name: learngolang
+  root-level: INFO
+  package-levels:
+    "protocol/ip/tcp": WARN
+  formatter: json # normal | json
+  log-file-dir: ./logs
+  log-file-name: application.log
+  log-to-stdout: true
+  log-writer-options:
+    max-file-size: 52428800 # 字节
+    max-file-backups: 20
+    max-file-age: 86400s
+    local-time: true
+    compress: true
+```
 #### config.go
 ```go
 type config struct {
@@ -7,13 +26,23 @@ Logging logging `yaml:"logging"`
 }
 
 type logging struct {
-RootName      string            `yaml:"root-name"`
-RootLevel     string            `yaml:"root-level"`
-PackageLevels map[string]string `yaml:"package-levels"`
-Encoder       string            `yaml:"encoder"`
-LogFileDir    string            `yaml:"log-file-dir"`
-LogFileName   string            `yaml:"log-file-name"`
-LogToStdout   bool              `yaml:"log-to-stdout"`
+Factory          string            `yaml:"factory"`
+RootName         string            `yaml:"root-name"`
+RootLevel        string            `yaml:"root-level"`
+PackageLevels    map[string]string `yaml:"package-levels"`
+Formatter        string            `yaml:"formatter"`
+LogFileDir       string            `yaml:"log-file-dir"`
+LogFileName      string            `yaml:"log-file-name"`
+LogToStdout      bool              `yaml:"log-to-stdout"`
+LogWriterOptions logWriter         `yaml:"log-writer-options"`
+}
+
+type logWriter struct {
+MaxFileSize    int    `yaml:"max-file-size"`
+MaxFileBackups int    `yaml:"max-file-backups"`
+MaxFileAge     string `yaml:"max-file-age"` // 秒
+LocalTime      bool   `yaml:"local-time"`
+Compress       bool   `yaml:"compress"`
 }
 
 var configYml = "./config/config.yml"
@@ -35,11 +64,44 @@ return nil
 }
 return c
 }
-
 ```
 #### logging.go
 ```go
-var loggerFactory = factory.NewLoggerFactory(
+const EMPTY = ""
+const SLASH = "/"
+
+var logging = config.Config.Logging
+var writer = logging.LogWriterOptions
+var outPaths []string
+var loggerFactory *factory.LoggerFactory
+var mutex = sync.Mutex{}
+
+func initLogging() {
+if loggerFactory != nil {
+return
+}
+mutex.Lock()
+defer mutex.Unlock()
+if loggerFactory != nil {
+return
+}
+outPaths = make([]string, 0)
+logFileDir := strings.TrimSpace(logging.LogFileDir)
+if len(logFileDir) <= 0 {
+logFileDir = "./logs"
+}
+logFileName := strings.TrimSpace(logging.LogFileName)
+if len(logFileName) <= 0 {
+logFileName = "./application.log"
+}
+logFilePath := logFileDir + SLASH + logFileName
+outPaths = append(outPaths, logFilePath)
+if logging.LogToStdout {
+outPaths = append(outPaths, "stdout")
+}
+
+loggerFactory = factory.NewLoggerFactory(
+logging.Factory,
 func(caller string) string {
 projectName := ""
 rootName := logging.RootName
@@ -59,14 +121,23 @@ os.Exit(-1)
 callerPackage := caller[projectNameIdx:]
 firstSlash := strings.Index(callerPackage, SLASH)
 lastSlash := strings.LastIndex(callerPackage, SLASH)
-callerPackage = callerPackage[firstSlash:lastSlash]
+if firstSlash < lastSlash {
+callerPackage = callerPackage[firstSlash+1 : lastSlash]
+} else {
+callerPackage = callerPackage[firstSlash+1:]
+}
 return callerPackage
 },
 )
 
+}
+
 var NewLogger = func() *factory.Logger {
-_, f, _, _ := runtime.Caller(1)
-return loggerFactory.NewLogger(f, outPaths, errPaths)
+_, callFilePath, _, _ := runtime.Caller(1)
+initLogging()
+MaxFileAge, _ := time.ParseDuration(writer.MaxFileAge)
+return loggerFactory.NewLogger(callFilePath, logging.Formatter, outPaths,
+writer.MaxFileSize, writer.MaxFileBackups, MaxFileAge, writer.LocalTime, writer.Compress)
 }
 ```
 #### actuator.go

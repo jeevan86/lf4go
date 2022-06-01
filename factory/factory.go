@@ -2,13 +2,7 @@ package factory
 
 import (
 	"strings"
-)
-
-type EncodingName string
-
-const (
-	EncodingNormal EncodingName = "console"
-	EncodingJson   EncodingName = "json"
+	"time"
 )
 
 const (
@@ -54,7 +48,7 @@ type KeyVal struct {
 type internalFactory interface {
 	getLevels(string) map[string]string
 	setLevels(string, string)
-	newLogger(string, string, []string) *Logger
+	newLogger(config *LoggerConfig) *Logger
 }
 
 func (f *LoggerFactory) GetLevels(prefix string) map[string]string {
@@ -64,12 +58,29 @@ func (f *LoggerFactory) SetLevels(prefix string, level string) {
 	f.delegate.setLevels(prefix, level)
 }
 
-func (f *LoggerFactory) NewLogger(callerFile string, outPaths []string) *Logger {
+func (f *LoggerFactory) NewLogger(
+	callerFile string, formatter string, outPaths []string,
+	maxFileSize int, maxFileBackups int, maxFileAge time.Duration, localTime bool, compress bool) *Logger {
 	//fmt.Println(fmt.Sprintf("%s, %s, %s, %s", pc, file, line, ok))
 	callerPackage := f.callerPackage(callerFile)
-	logger := f.delegate.newLogger(callerPackage, "info", outPaths)
+	writerConfig := &WriterConfig{
+		MaxFileSize:    maxFileSize,
+		MaxFileBackups: maxFileBackups,
+		MaxFileAge:     maxFileAge,
+		LocalTime:      localTime,
+		Compress:       compress,
+	}
+	loggerConfig := &LoggerConfig{
+		Name:      callerPackage,
+		Level:     logLevelNum("info"),
+		Formatter: formatter,
+		Writer:    writerConfig,
+		OutPaths:  outPaths,
+	}
+	logger := f.delegate.newLogger(loggerConfig)
 	logger.factory = f
-	return loggers[logger.Name]
+	loggers[logger.Config.Name] = logger
+	return loggers[logger.Config.Name]
 }
 
 var ZapLoggerFactoryImpl = ZapLoggerFactory("zap")

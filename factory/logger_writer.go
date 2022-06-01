@@ -31,7 +31,7 @@ func mergeWriter(w ...io.Writer) io.Writer {
 	return &merged
 }
 
-func writer(name string, outputs []string) io.Writer {
+func writer(name string, config *WriterConfig, outputs []string) io.Writer {
 	fWriters := make([]io.Writer, 0)
 	for _, p := range outputs {
 		var writer io.Writer
@@ -49,7 +49,7 @@ func writer(name string, outputs []string) io.Writer {
 			writer = writers["stderr"]
 		} else {
 			if writers[p] == nil {
-				w := newLumberjackWriter(p)
+				w := newLumberjackWriter(config, p)
 				writers[p] = w
 			}
 			writer = writers[p]

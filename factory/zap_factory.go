@@ -21,12 +21,12 @@ func (zf *ZapLoggerFactory) getLevels(prefix string) map[string]string {
 	levels := make(map[string]string, 16)
 	if "ROOT" == strings.ToUpper(prefix) {
 		for k, logger := range loggers {
-			levels[k] = logLevelName(logger.Level)
+			levels[k] = logLevelName(logger.Config.Level)
 		}
 	} else {
 		for k, logger := range loggers {
 			if strings.HasPrefix(k, prefix) {
-				levels[k] = logLevelName(logger.Level)
+				levels[k] = logLevelName(logger.Config.Level)
 			}
 		}
 	}
@@ -44,7 +44,7 @@ func (zf *ZapLoggerFactory) setLevels(prefix string, level string) {
 				sink:    sink,
 				factory: zf,
 			}
-			logger.Level = levelNum
+			logger.Config.Level = levelNum
 			logger.delegate = delegate
 		}
 		return
@@ -59,7 +59,7 @@ func (zf *ZapLoggerFactory) setLevels(prefix string, level string) {
 				sink:    sink,
 				factory: zf,
 			}
-			logger.Level = levelNum
+			logger.Config.Level = levelNum
 			logger.delegate = delegate
 		}
 	}
@@ -67,18 +67,20 @@ func (zf *ZapLoggerFactory) setLevels(prefix string, level string) {
 
 func (zf *ZapLoggerFactory) setLevel(name string, level zap.AtomicLevel) *zap.Logger {
 	logger := loggers[name]
+	loggerConfig := logger.Config
 	internal := logger.delegate.(*ZapLogger)
 	internal.config.Level = level
-	return newZapLogger(name, internal.config)
+	return newZapLogger(loggerConfig, internal.config)
 }
 
 // newLogger
 // []string{"stdout"},
 // []string{"stderr"},
-func (zf *ZapLoggerFactory) newLogger(name string, level string, outPaths []string) *Logger {
+func (zf *ZapLoggerFactory) newLogger(loggerConfig *LoggerConfig) *Logger {
 	encoderConfig := zap.NewProductionEncoderConfig()
 	encoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout(DTFormatNormal)
-	atomicLevel, levelNum := zf.logLevel(level)
+	atomicLevel, _ := zf.logLevel(logLevelName(loggerConfig.Level))
+	encoding := zf.formatterToEncoding(loggerConfig.Formatter)
 	config := &zap.Config{
 		Level:       atomicLevel,
 		Development: false,
@@ -86,40 +88,54 @@ func (zf *ZapLoggerFactory) newLogger(name string, level string, outPaths []stri
 			Initial:    100,
 			Thereafter: 100,
 		},
-		Encoding:         string(EncodingNormal),
+		Encoding:         encoding,
 		EncoderConfig:    encoderConfig,
-		OutputPaths:      outPaths,
-		ErrorOutputPaths: outPaths,
+		OutputPaths:      loggerConfig.OutPaths,
+		ErrorOutputPaths: loggerConfig.OutPaths,
 	}
-	sink := newZapLogger(name, config)
+	sink := newZapLogger(loggerConfig, config)
 	delegate := &ZapLogger{
-		name:    name,
 		config:  config,
-		level:   levelNum,
 		sink:    sink,
 		factory: zf,
 	}
-	loggers[name] = &Logger{
-		Name:     name,
-		Level:    levelNum,
+	return &Logger{
+		Config:   loggerConfig,
 		delegate: delegate,
-		outPaths: outPaths,
 	}
-	return loggers[name]
 }
+
+func (zf *ZapLoggerFactory) formatterToEncoding(formatter string) string {
+	encoding := strings.ToLower(formatter)
+	if encoding == "normal" {
+		encoding = "console"
+	} else if encoding == "json" {
+		encoding = "json"
+	} else {
+		encoding = "console"
+	}
+	return encoding
+}
+
+type zapEncodingName string
+
+const (
+	zapEncodingNormal zapEncodingName = "console"
+	zapEncodingJson   zapEncodingName = "json"
+)
 
 // newZapLogger
 // []string{"stdout"},
 // []string{"stderr"},
-func newZapLogger(name string, config *zap.Config) *zap.Logger {
+func newZapLogger(loggerConfig *LoggerConfig, config *zap.Config) *zap.Logger {
 	var encoder zapcore.Encoder
-	if string(EncodingNormal) == config.Encoding {
+	if string(zapEncodingNormal) == config.Encoding {
 		encoder = zapcore.NewConsoleEncoder(config.EncoderConfig)
-	} else if string(EncodingJson) == config.Encoding {
+	} else if string(zapEncodingJson) == config.Encoding {
 		encoder = zapcore.NewJSONEncoder(config.EncoderConfig)
 	}
 	log := zap.New(
-		zapcore.NewCore(encoder, zapcore.AddSync(writer(name, config.OutputPaths)), config.Level),
+		zapcore.NewCore(encoder, zapcore.AddSync(writer(loggerConfig.Name, loggerConfig.Writer, config.OutputPaths)), config.Level),
 	)
 	delegate := log.WithOptions(
 		zap.AddCallerSkip(3),
