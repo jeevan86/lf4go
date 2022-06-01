@@ -21,61 +21,37 @@ func (l *LogrusLogger) SetLevel(level string) {
 	l.level = levelNum
 }
 
-func (l *LogrusLogger) Trace(msg string, kvs ...interface{}) {
-	if kvs == nil || len(kvs) == 0 {
-		l.log(msg, l.sink.Trace)
-		return
-	}
-	l.sink.Tracef(msg, kvs)
+func (l *LogrusLogger) Trace(msg string) {
+	//l.log(msg, l.sink.Trace)
+	l.sink.Trace(msg)
 }
-func (l *LogrusLogger) Debug(msg string, kvs ...interface{}) {
-	if kvs == nil || len(kvs) == 0 {
-		l.log(msg, l.sink.Debug)
-		return
-	}
-	l.sink.Debugf(msg, kvs)
+func (l *LogrusLogger) Debug(msg string) {
+	//l.log(msg, l.sink.Debug)
+	l.sink.Debug(msg)
 }
-func (l *LogrusLogger) Info(msg string, kvs ...interface{}) {
-	if kvs == nil || len(kvs) == 0 {
-		l.log(msg, l.sink.Info)
-		return
-	}
-	l.sink.Infof(msg, kvs)
+func (l *LogrusLogger) Info(msg string) {
+	//l.log(msg, l.sink.Info)
+	l.sink.Info(msg)
 }
-func (l *LogrusLogger) Warn(msg string, kvs ...interface{}) {
-	if kvs == nil || len(kvs) == 0 {
-		l.log(msg, l.sink.Warn)
-		return
-	}
-	l.sink.Warnf(msg, kvs)
+func (l *LogrusLogger) Warn(msg string) {
+	// l.log(msg, l.sink.Warn)
+	l.sink.Warn(msg)
 }
-func (l *LogrusLogger) Error(msg string, kvs ...interface{}) {
-	if kvs == nil || len(kvs) == 0 {
-		l.log(msg, l.sink.Error)
-		return
-	}
-	l.sink.Errorf(msg, kvs)
+func (l *LogrusLogger) Error(msg string) {
+	//l.log(msg, l.sink.Error)
+	l.sink.Error(msg)
 }
-func (l *LogrusLogger) Fatal(msg string, kvs ...interface{}) {
-	if kvs == nil || len(kvs) == 0 {
-		l.log(msg, l.sink.Fatal)
-		return
-	}
-	l.sink.Fatalf(msg, kvs)
+func (l *LogrusLogger) Fatal(msg string) {
+	//l.log(msg, l.sink.Fatal)
+	l.sink.Fatal(msg)
 }
-func (l *LogrusLogger) DPanic(msg string, kvs ...interface{}) {
-	if kvs == nil || len(kvs) == 0 {
-		l.log(msg, l.sink.Panic)
-		return
-	}
-	l.sink.Panicf(msg, kvs)
+func (l *LogrusLogger) DPanic(msg string) {
+	//l.log(msg, l.sink.Panic)
+	l.sink.Panic(msg)
 }
-func (l *LogrusLogger) Panic(msg string, kvs ...interface{}) {
-	if kvs == nil || len(kvs) == 0 {
-		l.log(msg, l.sink.Panic)
-		return
-	}
-	l.sink.Panicf(msg, kvs)
+func (l *LogrusLogger) Panic(msg string) {
+	//l.log(msg, l.sink.Panic)
+	l.sink.Panic(msg)
 }
 
 func (l *LogrusLogger) log(msg string, f func(...interface{}), args ...interface{}) {

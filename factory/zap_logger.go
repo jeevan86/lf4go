@@ -21,61 +21,37 @@ func (l *ZapLogger) SetLevel(level string) {
 	l.level = levelNum
 }
 
-func (l *ZapLogger) Trace(msg string, kvs ...interface{}) {
-	if kvs == nil || len(kvs) == 0 {
-		l.log(msg, l.sink.Debug)
-		return
-	}
-	l.log(msg, l.sink.Debug, kvs)
+func (l *ZapLogger) Trace(msg string) {
+	//l.log(msg, l.sink.Debug)
+	l.sink.Debug(msg)
 }
-func (l *ZapLogger) Debug(msg string, kvs ...interface{}) {
-	if kvs == nil || len(kvs) == 0 {
-		l.log(msg, l.sink.Debug)
-		return
-	}
-	l.log(msg, l.sink.Debug, kvs)
+func (l *ZapLogger) Debug(msg string) {
+	//l.log(msg, l.sink.Debug)
+	l.sink.Debug(msg)
 }
-func (l *ZapLogger) Info(msg string, kvs ...interface{}) {
-	if kvs == nil || len(kvs) == 0 {
-		l.log(msg, l.sink.Info)
-		return
-	}
-	l.log(msg, l.sink.Info, kvs)
+func (l *ZapLogger) Info(msg string) {
+	//l.log(msg, l.sink.Info)
+	l.sink.Info(msg)
 }
-func (l *ZapLogger) Warn(msg string, kvs ...interface{}) {
-	if kvs == nil || len(kvs) == 0 {
-		l.log(msg, l.sink.Warn)
-		return
-	}
-	l.log(msg, l.sink.Warn, kvs)
+func (l *ZapLogger) Warn(msg string) {
+	// l.log(msg, l.sink.Warn)
+	l.sink.Warn(msg)
 }
-func (l *ZapLogger) Error(msg string, kvs ...interface{}) {
-	if kvs == nil || len(kvs) == 0 {
-		l.log(msg, l.sink.Error)
-		return
-	}
-	l.log(msg, l.sink.Error, kvs)
+func (l *ZapLogger) Error(msg string) {
+	//l.log(msg, l.sink.Error)
+	l.sink.Error(msg)
 }
-func (l *ZapLogger) Fatal(msg string, kvs ...interface{}) {
-	if kvs == nil || len(kvs) == 0 {
-		l.log(msg, l.sink.Fatal)
-		return
-	}
-	l.log(msg, l.sink.Fatal, kvs)
+func (l *ZapLogger) Fatal(msg string) {
+	//l.log(msg, l.sink.Fatal)
+	l.sink.Fatal(msg)
 }
-func (l *ZapLogger) DPanic(msg string, kvs ...interface{}) {
-	if kvs == nil || len(kvs) == 0 {
-		l.log(msg, l.sink.DPanic)
-		return
-	}
-	l.log(msg, l.sink.DPanic, kvs)
+func (l *ZapLogger) DPanic(msg string) {
+	//l.log(msg, l.sink.DPanic)
+	l.sink.DPanic(msg)
 }
-func (l *ZapLogger) Panic(msg string, kvs ...interface{}) {
-	if kvs == nil || len(kvs) == 0 {
-		l.log(msg, l.sink.Panic)
-		return
-	}
-	l.log(msg, l.sink.Panic, kvs)
+func (l *ZapLogger) Panic(msg string) {
+	//l.log(msg, l.sink.Panic)
+	l.sink.Panic(msg)
 }
 
 func (l *ZapLogger) log(msg string, f func(string, ...zap.Field), kvs ...interface{}) {

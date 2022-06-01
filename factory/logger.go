@@ -1,8 +1,11 @@
 package factory
 
 import (
+	"fmt"
 	"strings"
 )
+
+var loggers = make(map[string]*Logger)
 
 type Logger struct {
 	Name     string
@@ -13,14 +16,14 @@ type Logger struct {
 }
 
 type loggerDelegate interface {
-	Trace(string, ...interface{})
-	Debug(string, ...interface{})
-	Info(string, ...interface{})
-	Warn(string, ...interface{})
-	Error(string, ...interface{})
-	Fatal(string, ...interface{})
-	DPanic(string, ...interface{})
-	Panic(string, ...interface{})
+	Trace(string)
+	Debug(string)
+	Info(string)
+	Warn(string)
+	Error(string)
+	Fatal(string)
+	DPanic(string)
+	Panic(string)
 }
 
 func (l *Logger) SetLevels(prefix string, level string) {
@@ -55,53 +58,61 @@ func (l *Logger) IsFatalEnabled() bool {
 	return l.Level <= LvlFatal
 }
 
-func (l *Logger) Trace(msg string, kvs ...interface{}) {
-	if kvs == nil || len(kvs) == 0 {
-		l.delegate.Trace(msg)
+func (l *Logger) Trace(format string, args ...interface{}) {
+	msg := format
+	if args != nil && len(args) != 0 {
+		msg = fmt.Sprintf(format, args)
 	}
-	l.delegate.Trace(msg, kvs)
+	l.delegate.Trace(msg)
 }
-func (l *Logger) Debug(msg string, kvs ...interface{}) {
-	if kvs == nil || len(kvs) == 0 {
-		l.delegate.Debug(msg)
+func (l *Logger) Debug(format string, args ...interface{}) {
+	msg := format
+	if args != nil && len(args) != 0 {
+		msg = fmt.Sprintf(format, args)
 	}
-	l.delegate.Debug(msg, kvs)
+	l.delegate.Debug(msg)
 }
-func (l *Logger) Info(msg string, kvs ...interface{}) {
-	if kvs == nil || len(kvs) == 0 {
-		l.delegate.Info(msg)
+func (l *Logger) Info(format string, args ...interface{}) {
+	msg := format
+	if args != nil && len(args) != 0 {
+		msg = fmt.Sprintf(format, args)
 	}
-	l.delegate.Info(msg, kvs)
+	l.delegate.Info(msg)
 }
-func (l *Logger) Warn(msg string, kvs ...interface{}) {
-	if kvs == nil || len(kvs) == 0 {
-		l.delegate.Warn(msg)
+func (l *Logger) Warn(format string, args ...interface{}) {
+	msg := format
+	if args != nil && len(args) != 0 {
+		msg = fmt.Sprintf(format, args)
 	}
-	l.delegate.Warn(msg, kvs)
+	l.delegate.Warn(msg)
 }
-func (l *Logger) Error(msg string, kvs ...interface{}) {
-	if kvs == nil || len(kvs) == 0 {
-		l.delegate.Error(msg)
+func (l *Logger) Error(format string, args ...interface{}) {
+	msg := format
+	if args != nil && len(args) != 0 {
+		msg = fmt.Sprintf(format, args)
 	}
-	l.delegate.Error(msg, kvs)
+	l.delegate.Error(msg)
 }
-func (l *Logger) DPanic(msg string, kvs ...interface{}) {
-	if kvs == nil || len(kvs) == 0 {
-		l.delegate.DPanic(msg)
+func (l *Logger) DPanic(format string, args ...interface{}) {
+	msg := format
+	if args != nil && len(args) != 0 {
+		msg = fmt.Sprintf(format, args)
 	}
-	l.delegate.DPanic(msg, kvs)
+	l.delegate.DPanic(msg)
 }
-func (l *Logger) Panic(msg string, kvs ...interface{}) {
-	if kvs == nil || len(kvs) == 0 {
-		l.delegate.Panic(msg)
+func (l *Logger) Panic(format string, args ...interface{}) {
+	msg := format
+	if args != nil && len(args) != 0 {
+		msg = fmt.Sprintf(format, args)
 	}
-	l.delegate.Panic(msg, kvs)
+	l.delegate.Panic(msg)
 }
-func (l *Logger) Fatal(msg string, kvs ...interface{}) {
-	if kvs == nil || len(kvs) == 0 {
-		l.delegate.Fatal(msg)
+func (l *Logger) Fatal(format string, args ...interface{}) {
+	msg := format
+	if args != nil && len(args) != 0 {
+		msg = fmt.Sprintf(format, args)
 	}
-	l.delegate.Fatal(msg, kvs)
+	l.delegate.Fatal(msg)
 }
 
 func logLevelNum(level string) LevelNum {
@@ -138,6 +149,9 @@ func logLevelNum(level string) LevelNum {
 func logLevelName(num LevelNum) string {
 	name := "Info"
 	switch num {
+	case LvlTrace:
+		name = "Trace"
+		break
 	case LvlDebug:
 		name = "Debug"
 		break

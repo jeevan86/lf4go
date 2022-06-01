@@ -15,8 +15,6 @@ const (
 	DTFormatNormal = "2006-01-02 15:04:05.000"
 )
 
-var loggers = make(map[string]*Logger)
-
 type LoggerFactory struct {
 	callerPackage func(caller string) string
 	delegate      internalFactory
@@ -83,6 +81,7 @@ func NewLoggerFactory(impl string, callerPackageDetector func(caller string) str
 		return ZapLoggerFactoryImpl.NewFactory(callerPackageDetector)
 	case string(LogrusLoggerFactoryImpl):
 		return LogrusLoggerFactoryImpl.NewFactory(callerPackageDetector)
+	default:
+		return LogrusLoggerFactoryImpl.NewFactory(callerPackageDetector)
 	}
-	return nil
 }
