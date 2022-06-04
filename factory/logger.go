@@ -76,56 +76,56 @@ func (l *Logger) IsFatalEnabled() bool {
 func (l *Logger) Trace(format string, args ...interface{}) {
 	msg := format
 	if args != nil && len(args) != 0 {
-		msg = fmt.Sprintf(format, args)
+		msg = fmt.Sprintf(format, args...)
 	}
 	l.delegate.Trace(msg)
 }
 func (l *Logger) Debug(format string, args ...interface{}) {
 	msg := format
 	if args != nil && len(args) != 0 {
-		msg = fmt.Sprintf(format, args)
+		msg = fmt.Sprintf(format, args...)
 	}
 	l.delegate.Debug(msg)
 }
 func (l *Logger) Info(format string, args ...interface{}) {
 	msg := format
 	if args != nil && len(args) != 0 {
-		msg = fmt.Sprintf(format, args)
+		msg = fmt.Sprintf(format, args...)
 	}
 	l.delegate.Info(msg)
 }
 func (l *Logger) Warn(format string, args ...interface{}) {
 	msg := format
 	if args != nil && len(args) != 0 {
-		msg = fmt.Sprintf(format, args)
+		msg = fmt.Sprintf(format, args...)
 	}
 	l.delegate.Warn(msg)
 }
 func (l *Logger) Error(format string, args ...interface{}) {
 	msg := format
 	if args != nil && len(args) != 0 {
-		msg = fmt.Sprintf(format, args)
+		msg = fmt.Sprintf(format, args...)
 	}
 	l.delegate.Error(msg)
 }
 func (l *Logger) DPanic(format string, args ...interface{}) {
 	msg := format
 	if args != nil && len(args) != 0 {
-		msg = fmt.Sprintf(format, args)
+		msg = fmt.Sprintf(format, args...)
 	}
 	l.delegate.DPanic(msg)
 }
 func (l *Logger) Panic(format string, args ...interface{}) {
 	msg := format
 	if args != nil && len(args) != 0 {
-		msg = fmt.Sprintf(format, args)
+		msg = fmt.Sprintf(format, args...)
 	}
 	l.delegate.Panic(msg)
 }
 func (l *Logger) Fatal(format string, args ...interface{}) {
 	msg := format
 	if args != nil && len(args) != 0 {
-		msg = fmt.Sprintf(format, args)
+		msg = fmt.Sprintf(format, args...)
 	}
 	l.delegate.Fatal(msg)
 }
