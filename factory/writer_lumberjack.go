@@ -25,14 +25,14 @@ func defaultLumberjackWriter(filePath string) io.Writer {
 	return writer
 }
 
-func newLumberjackWriter(config *WriterConfig, filePath string) io.Writer {
+func newLumberjackWriter(config *fileWriterConfig) io.Writer {
 	options := lumberjack.Options{
 		MaxAge:     config.MaxFileAge,
 		MaxBackups: config.MaxFileBackups,
 		LocalTime:  config.LocalTime,
 		Compress:   config.Compress,
 	}
-	writer, err := lumberjack.NewRoller(filePath, defaultMaxFileSize, &options)
+	writer, err := lumberjack.NewRoller(config.LogFilePath, defaultMaxFileSize, &options)
 	if err != nil {
 		fmt.Println(fmt.Sprintf("Fatal! %s", err.Error()))
 		os.Exit(-1)

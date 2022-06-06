@@ -3,7 +3,6 @@ package factory
 import (
 	"io"
 	"os"
-	"strings"
 )
 
 var writers = make(map[string]io.Writer)
@@ -31,28 +30,29 @@ func mergeWriter(w ...io.Writer) io.Writer {
 	return &merged
 }
 
-func writer(name string, config *WriterConfig, outputs []string) io.Writer {
+func writer(name string, appenders []AppenderConfig) io.Writer {
 	fWriters := make([]io.Writer, 0)
-	for _, p := range outputs {
+	for _, appender := range appenders {
 		var writer io.Writer
-		if strings.ToLower(p) == "stdout" {
+		if "file" == appender.Type {
+			writerConfig := toFileWriterConfig(appender)
+			if writers[writerConfig.LogFilePath] == nil {
+				w := newLumberjackWriter(writerConfig)
+				writers[writerConfig.LogFilePath] = w
+			}
+			writer = writers[writerConfig.LogFilePath]
+		} else if "stdout" == appender.Type {
 			if writers["stdout"] == nil {
 				w := os.Stdout
 				writers["stdout"] = w
 			}
 			writer = writers["stdout"]
-		} else if strings.ToLower(p) == "stderr" {
+		} else if "stderr" == appender.Type {
 			if writers["stderr"] == nil {
 				w := os.Stderr
 				writers["stderr"] = w
 			}
 			writer = writers["stderr"]
-		} else {
-			if writers[p] == nil {
-				w := newLumberjackWriter(config, p)
-				writers[p] = w
-			}
-			writer = writers[p]
 		}
 		fWriters = append(fWriters, writer)
 	}

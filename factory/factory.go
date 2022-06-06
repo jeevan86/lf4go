@@ -2,7 +2,6 @@ package factory
 
 import (
 	"strings"
-	"time"
 )
 
 const (
@@ -58,24 +57,16 @@ func (f *LoggerFactory) SetLevels(prefix string, level string) {
 	f.delegate.setLevels(prefix, level)
 }
 
-func (f *LoggerFactory) NewLogger(
-	callerFile string, formatter string, outPaths []string,
-	maxFileSize int, maxFileBackups int, maxFileAge time.Duration, localTime bool, compress bool) *Logger {
+const SLASH = "/"
+
+func (f *LoggerFactory) NewLogger(callerFile string, formatter string, appenders []AppenderConfig) *Logger {
 	//fmt.Println(fmt.Sprintf("%s, %s, %s, %s", pc, file, line, ok))
 	callerPackage := f.callerPackage(callerFile)
-	writerConfig := &WriterConfig{
-		MaxFileSize:    maxFileSize,
-		MaxFileBackups: maxFileBackups,
-		MaxFileAge:     maxFileAge,
-		LocalTime:      localTime,
-		Compress:       compress,
-	}
 	loggerConfig := &LoggerConfig{
 		Name:      callerPackage,
 		Level:     logLevelNum("info"),
 		Formatter: formatter,
-		Writer:    writerConfig,
-		OutPaths:  outPaths,
+		Appenders: appenders,
 	}
 	logger := f.delegate.newLogger(loggerConfig)
 	logger.factory = f

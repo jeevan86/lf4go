@@ -144,7 +144,7 @@ func (lf *LogrusLoggerFactory) newHook(name string) logrus.LevelHooks {
 // newLogrusLogger
 // []string{"stdout", "logs/application.log"},
 func (lf *LogrusLoggerFactory) newLogrusLogger(loggerConfig *LoggerConfig, level logrus.Level) *logrus.Logger {
-	merged := writer(loggerConfig.Name, loggerConfig.Writer, loggerConfig.OutPaths)
+	merged := writer(loggerConfig.Name, loggerConfig.Appenders)
 	delegate := &logrus.Logger{
 		Out:          merged,
 		Hooks:        lf.newHook(loggerConfig.Name),

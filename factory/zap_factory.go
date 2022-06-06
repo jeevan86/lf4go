@@ -88,10 +88,8 @@ func (zf *ZapLoggerFactory) newLogger(loggerConfig *LoggerConfig) *Logger {
 			Initial:    100,
 			Thereafter: 100,
 		},
-		Encoding:         encoding,
-		EncoderConfig:    encoderConfig,
-		OutputPaths:      loggerConfig.OutPaths,
-		ErrorOutputPaths: loggerConfig.OutPaths,
+		Encoding:      encoding,
+		EncoderConfig: encoderConfig,
 	}
 	sink := newZapLogger(loggerConfig, config)
 	delegate := &ZapLogger{
@@ -135,7 +133,7 @@ func newZapLogger(loggerConfig *LoggerConfig, config *zap.Config) *zap.Logger {
 		encoder = zapcore.NewJSONEncoder(config.EncoderConfig)
 	}
 	log := zap.New(
-		zapcore.NewCore(encoder, zapcore.AddSync(writer(loggerConfig.Name, loggerConfig.Writer, config.OutputPaths)), config.Level),
+		zapcore.NewCore(encoder, zapcore.AddSync(writer(loggerConfig.Name, loggerConfig.Appenders)), config.Level),
 	)
 	delegate := log.WithOptions(
 		zap.AddCallerSkip(3),
@@ -145,7 +143,7 @@ func newZapLogger(loggerConfig *LoggerConfig, config *zap.Config) *zap.Logger {
 	return delegate
 }
 
-func (lf *ZapLoggerFactory) logLevel(level string) (zap.AtomicLevel, LevelNum) {
+func (zf *ZapLoggerFactory) logLevel(level string) (zap.AtomicLevel, LevelNum) {
 	var levelObj = zap.NewAtomicLevelAt(zapcore.InfoLevel)
 	var levelNum = LvlInfo
 	switch strings.ToUpper(level) {

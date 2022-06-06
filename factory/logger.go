@@ -3,7 +3,6 @@ package factory
 import (
 	"fmt"
 	"strings"
-	"time"
 )
 
 var loggers = make(map[string]*Logger)
@@ -18,16 +17,7 @@ type LoggerConfig struct {
 	Name      string
 	Level     LevelNum
 	Formatter string
-	Writer    *WriterConfig
-	OutPaths  []string
-}
-
-type WriterConfig struct {
-	MaxFileSize    int
-	MaxFileBackups int
-	MaxFileAge     time.Duration
-	LocalTime      bool
-	Compress       bool
+	Appenders []AppenderConfig
 }
 
 type loggerDelegate interface {
