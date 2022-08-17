@@ -59,14 +59,18 @@ func (f *LoggerFactory) SetLevels(prefix string, level string) {
 
 const SLASH = "/"
 
-func (f *LoggerFactory) NewLogger(callerFile string, formatter string, appenders []AppenderConfig) *Logger {
-	//fmt.Println(fmt.Sprintf("%s, %s, %s, %s", pc, file, line, ok))
+func (f *LoggerFactory) NewLogger(callerFile string, config *LoggingConfig) *Logger {
 	callerPackage := f.callerPackage(callerFile)
+	level := "info"          // default level info
+	level = config.RootLevel // root level
+	if config.PackageLevels != nil {
+		level, _ = config.PackageLevels[callerPackage] // special level
+	}
 	loggerConfig := &LoggerConfig{
 		Name:      callerPackage,
-		Level:     logLevelNum("info"),
-		Formatter: formatter,
-		Appenders: appenders,
+		Level:     logLevelNum(level),
+		Formatter: config.Formatter,
+		Appenders: config.Appenders,
 	}
 	logger := f.delegate.newLogger(loggerConfig)
 	logger.factory = f
