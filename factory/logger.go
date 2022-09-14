@@ -2,6 +2,7 @@ package factory
 
 import (
 	"fmt"
+	"runtime"
 	"strings"
 )
 
@@ -14,10 +15,11 @@ type Logger struct {
 }
 
 type LoggerConfig struct {
-	Name      string
-	Level     LevelNum
-	Formatter string
-	Appenders []AppenderConfig
+	Name         string
+	Level        LevelNum
+	Formatter    string
+	Appenders    []AppenderConfig
+	ReportCaller bool
 }
 
 type loggerDelegate interface {
@@ -64,60 +66,59 @@ func (l *Logger) IsFatalEnabled() bool {
 }
 
 func (l *Logger) Trace(format string, args ...interface{}) {
-	msg := format
-	if args != nil && len(args) != 0 {
-		msg = fmt.Sprintf(format, args...)
-	}
-	l.delegate.Trace(msg)
+	l.delegate.Trace(l.doFormat(format, args...))
 }
 func (l *Logger) Debug(format string, args ...interface{}) {
-	msg := format
-	if args != nil && len(args) != 0 {
-		msg = fmt.Sprintf(format, args...)
-	}
-	l.delegate.Debug(msg)
+	l.delegate.Debug(l.doFormat(format, args...))
 }
 func (l *Logger) Info(format string, args ...interface{}) {
-	msg := format
-	if args != nil && len(args) != 0 {
-		msg = fmt.Sprintf(format, args...)
-	}
-	l.delegate.Info(msg)
+	l.delegate.Info(l.doFormat(format, args...))
 }
 func (l *Logger) Warn(format string, args ...interface{}) {
-	msg := format
-	if args != nil && len(args) != 0 {
-		msg = fmt.Sprintf(format, args...)
-	}
-	l.delegate.Warn(msg)
+	l.delegate.Warn(l.doFormat(format, args...))
 }
 func (l *Logger) Error(format string, args ...interface{}) {
-	msg := format
-	if args != nil && len(args) != 0 {
-		msg = fmt.Sprintf(format, args...)
-	}
-	l.delegate.Error(msg)
+	l.delegate.Error(l.doFormat(format, args...))
 }
 func (l *Logger) DPanic(format string, args ...interface{}) {
-	msg := format
-	if args != nil && len(args) != 0 {
-		msg = fmt.Sprintf(format, args...)
-	}
-	l.delegate.DPanic(msg)
+	l.delegate.DPanic(l.doFormat(format, args...))
 }
 func (l *Logger) Panic(format string, args ...interface{}) {
-	msg := format
-	if args != nil && len(args) != 0 {
-		msg = fmt.Sprintf(format, args...)
-	}
-	l.delegate.Panic(msg)
+	l.delegate.Panic(l.doFormat(format, args...))
 }
 func (l *Logger) Fatal(format string, args ...interface{}) {
+	l.delegate.Fatal(l.doFormat(format, args...))
+}
+
+func (l *Logger) doFormat(format string, args ...interface{}) string {
 	msg := format
 	if args != nil && len(args) != 0 {
 		msg = fmt.Sprintf(format, args...)
 	}
-	l.delegate.Fatal(msg)
+	if l.Config.ReportCaller {
+		msg = l.withCaller(msg)
+	}
+	return msg
+}
+
+func (l *Logger) withCaller(format string) string {
+	pc, file, line, _ := runtime.Caller(3)
+	funcName := stringAfterLast(runtime.FuncForPC(pc).Name(), SLASH)
+	packName := l.Config.Name
+	fileName := stringAfterLast(file, SLASH)
+	fileLine := line
+	return fmt.Sprintf("%s(%s/%s:%d)\t%s", funcName, packName, fileName, fileLine, format)
+}
+
+func stringAfterLast(origin, last string) string {
+	idx := strings.LastIndex(origin, last)
+	if idx == -1 {
+		return origin
+	}
+	if len(origin) <= idx+1 {
+		return ""
+	}
+	return origin[idx+1:]
 }
 
 func logLevelNum(level string) LevelNum {

@@ -135,11 +135,12 @@ func newZapLogger(loggerConfig *LoggerConfig, config *zap.Config) *zap.Logger {
 	log := zap.New(
 		zapcore.NewCore(encoder, zapcore.AddSync(writer(loggerConfig.Name, loggerConfig.Appenders)), config.Level),
 	)
-	delegate := log.WithOptions(
-		zap.AddCallerSkip(3),
-		zap.AddCaller(),
-	)
+	//delegate := log.WithOptions(
+	//	zap.AddCallerSkip(3),
+	//	zap.AddCaller(),
+	//)
 	//delegate, _ := config.Build(zap.AddCallerSkip(3))
+	delegate := log.WithOptions(zap.WithCaller(false))
 	return delegate
 }
 

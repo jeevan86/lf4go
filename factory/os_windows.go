@@ -1,0 +1,3 @@
+package factory
+
+var SLASH = "\\"
