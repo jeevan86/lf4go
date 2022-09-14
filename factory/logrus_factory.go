@@ -146,10 +146,11 @@ func (lf *LogrusLoggerFactory) newHook(name string) logrus.LevelHooks {
 func (lf *LogrusLoggerFactory) newLogrusLogger(loggerConfig *LoggerConfig, level logrus.Level) *logrus.Logger {
 	merged := writer(loggerConfig.Name, loggerConfig.Appenders)
 	delegate := &logrus.Logger{
-		Out:          merged,
-		Hooks:        lf.newHook(loggerConfig.Name),
-		Formatter:    logrusFormatter(loggerConfig.Formatter),
-		ReportCaller: true, // set to false will cause entry.HasCaller() return false, wtf!
+		Out:       merged,
+		Hooks:     lf.newHook(loggerConfig.Name),
+		Formatter: logrusFormatter(loggerConfig.Formatter),
+		//ReportCaller: true, // set to false will cause entry.HasCaller() return false, wtf!
+		ReportCaller: false, // disable caller
 		Level:        level,
 		// ExitFunc exitFunc, // Function to exit the application, defaults to `os.Exit()`
 	}

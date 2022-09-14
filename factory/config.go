@@ -7,6 +7,7 @@ type LoggingConfig struct {
 	PackageLevels map[string]string `yaml:"package-levels"`
 	Formatter     string            `yaml:"formatter"`
 	Appenders     []AppenderConfig  `yaml:"appenders"`
+	ReportCaller  bool              `yaml:"report-caller"`
 }
 
 type AppenderConfig struct {
