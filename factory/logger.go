@@ -96,13 +96,49 @@ func (l *Logger) doFormat(format string, args ...interface{}) string {
 		msg = fmt.Sprintf(format, args...)
 	}
 	if l.Config.ReportCaller {
-		msg = l.withCaller(msg)
+		msg = l.withCaller(3, msg)
 	}
 	return msg
 }
 
-func (l *Logger) withCaller(format string) string {
-	pc, file, line, _ := runtime.Caller(3)
+func (l *Logger) SkTrace(skip int, format string, args ...interface{}) {
+	l.delegate.Trace(l.skDoFormat(skip, format, args...))
+}
+func (l *Logger) SkDebug(skip int, format string, args ...interface{}) {
+	l.delegate.Debug(l.skDoFormat(skip, format, args...))
+}
+func (l *Logger) SkInfo(skip int, format string, args ...interface{}) {
+	l.delegate.Info(l.skDoFormat(skip, format, args...))
+}
+func (l *Logger) SkWarn(skip int, format string, args ...interface{}) {
+	l.delegate.Warn(l.skDoFormat(skip, format, args...))
+}
+func (l *Logger) SkError(skip int, format string, args ...interface{}) {
+	l.delegate.Error(l.skDoFormat(skip, format, args...))
+}
+func (l *Logger) SkDPanic(skip int, format string, args ...interface{}) {
+	l.delegate.DPanic(l.skDoFormat(skip, format, args...))
+}
+func (l *Logger) SkPanic(skip int, format string, args ...interface{}) {
+	l.delegate.Panic(l.skDoFormat(skip, format, args...))
+}
+func (l *Logger) SkFatal(skip int, format string, args ...interface{}) {
+	l.delegate.Fatal(l.skDoFormat(skip, format, args...))
+}
+
+func (l *Logger) skDoFormat(skip int, format string, args ...interface{}) string {
+	msg := format
+	if args != nil && len(args) != 0 {
+		msg = fmt.Sprintf(format, args...)
+	}
+	if l.Config.ReportCaller {
+		msg = l.withCaller(skip, msg)
+	}
+	return msg
+}
+
+func (l *Logger) withCaller(skip int, format string) string {
+	pc, file, line, _ := runtime.Caller(skip)
 	funcName := stringAfterLast(runtime.FuncForPC(pc).Name(), SLASH)
 	packName := l.Config.Name
 	fileName := stringAfterLast(file, SLASH)
