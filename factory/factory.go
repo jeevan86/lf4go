@@ -77,6 +77,25 @@ func (f *LoggerFactory) NewLogger(callerFile string, config *LoggingConfig) *Log
 	return loggers[logger.Config.Name]
 }
 
+func (f *LoggerFactory) NewPackageLogger(callerPackage string, config *LoggingConfig) *Logger {
+	level := "info"          // default level info
+	level = config.RootLevel // root level
+	if config.PackageLevels != nil {
+		level, _ = config.PackageLevels[callerPackage] // special level
+	}
+	loggerConfig := &LoggerConfig{
+		Name:         callerPackage,
+		Level:        logLevelNum(level),
+		Formatter:    config.Formatter,
+		Appenders:    config.Appenders,
+		ReportCaller: config.ReportCaller,
+	}
+	logger := f.delegate.newLogger(loggerConfig)
+	logger.factory = f
+	loggers[logger.Config.Name] = logger
+	return loggers[logger.Config.Name]
+}
+
 var ZapLoggerFactoryImpl = ZapLoggerFactory("zap")
 var LogrusLoggerFactoryImpl = LogrusLoggerFactory("logrus")
 
