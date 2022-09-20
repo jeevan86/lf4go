@@ -39,8 +39,9 @@ func (zf *ZapLoggerFactory) setLevels(prefix string, level string) {
 			var levelObj zap.AtomicLevel
 			var levelNum LevelNum
 			levelObj, levelNum = zf.logLevel(level)
-			sink := zf.setLevel(k, levelObj)
+			sink, conf := zf.setLevel(k, levelObj)
 			delegate := &ZapLogger{
+				config:  conf,
 				sink:    sink,
 				factory: zf,
 			}
@@ -54,8 +55,9 @@ func (zf *ZapLoggerFactory) setLevels(prefix string, level string) {
 			var levelObj zap.AtomicLevel
 			var levelNum LevelNum
 			levelObj, levelNum = zf.logLevel(level)
-			sink := zf.setLevel(k, levelObj)
+			sink, conf := zf.setLevel(k, levelObj)
 			delegate := &ZapLogger{
+				config:  conf,
 				sink:    sink,
 				factory: zf,
 			}
@@ -65,12 +67,12 @@ func (zf *ZapLoggerFactory) setLevels(prefix string, level string) {
 	}
 }
 
-func (zf *ZapLoggerFactory) setLevel(name string, level zap.AtomicLevel) *zap.Logger {
+func (zf *ZapLoggerFactory) setLevel(name string, level zap.AtomicLevel) (*zap.Logger, *zap.Config) {
 	logger := loggers[name]
 	loggerConfig := logger.Config
 	internal := logger.delegate.(*ZapLogger)
 	internal.config.Level = level
-	return newZapLogger(loggerConfig, internal.config)
+	return newZapLogger(loggerConfig, internal.config), internal.config
 }
 
 // newLogger
