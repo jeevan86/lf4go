@@ -163,7 +163,7 @@ func (lf *LogrusLoggerFactory) logLevel(level string) (logrus.Level, LevelNum) {
 	switch strings.ToUpper(level) {
 	case "TRACE":
 		logrusLevel = logrus.TraceLevel
-		levelNum = LvlDebug
+		levelNum = LvlTrace
 		break
 	case "DEBUG":
 		logrusLevel = logrus.DebugLevel

@@ -152,7 +152,7 @@ func (zf *ZapLoggerFactory) logLevel(level string) (zap.AtomicLevel, LevelNum) {
 	switch strings.ToUpper(level) {
 	case "TRACE":
 		levelObj = zap.NewAtomicLevelAt(zapcore.DebugLevel)
-		levelNum = LvlDebug
+		levelNum = LvlTrace
 		break
 	case "DEBUG":
 		levelObj = zap.NewAtomicLevelAt(zapcore.DebugLevel)
