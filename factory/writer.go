@@ -3,9 +3,12 @@ package factory
 import (
 	"io"
 	"os"
+	"strings"
+	"sync"
 )
 
 var writers = make(map[string]io.Writer)
+var writersLk = &sync.Mutex{}
 
 type mergedWriter struct {
 	delegates []io.Writer
@@ -31,32 +34,35 @@ func mergeWriter(w ...io.Writer) io.Writer {
 }
 
 func writer(name string, appenders []AppenderConfig) io.Writer {
-	fWriters := make([]io.Writer, 0)
+	writersLk.Lock()
+	defer writersLk.Unlock()
+	appenderWriters := make([]io.Writer, 0)
 	for _, appender := range appenders {
-		var writer io.Writer
-		if "file" == appender.Type {
+		var wr io.Writer
+		if "file" == strings.ToLower(appender.Type) {
 			writerConfig := toFileWriterConfig(appender)
-			if writers[writerConfig.LogFilePath] == nil {
-				w := newLumberjackWriter(writerConfig)
-				writers[writerConfig.LogFilePath] = w
+			fileWriter, exists := writers[writerConfig.LogFilePath]
+			if !exists || fileWriter == nil {
+				fileWriter = newLumberjackWriter(writerConfig)
+				writers[writerConfig.LogFilePath] = fileWriter
 			}
-			writer = writers[writerConfig.LogFilePath]
-		} else if "stdout" == appender.Type {
+			wr = fileWriter
+		} else if "stdout" == strings.ToLower(appender.Type) {
 			if writers["stdout"] == nil {
-				w := os.Stdout
-				writers["stdout"] = w
+				stdoutWriter := os.Stdout
+				writers["stdout"] = stdoutWriter
 			}
-			writer = writers["stdout"]
-		} else if "stderr" == appender.Type {
+			wr = writers["stdout"]
+		} else if "stderr" == strings.ToLower(appender.Type) {
 			if writers["stderr"] == nil {
-				w := os.Stderr
-				writers["stderr"] = w
+				stderrWriter := os.Stderr
+				writers["stderr"] = stderrWriter
 			}
-			writer = writers["stderr"]
+			wr = writers["stderr"]
 		}
-		fWriters = append(fWriters, writer)
+		appenderWriters = append(appenderWriters, wr)
 	}
-	merged := mergeWriter(fWriters...)
+	merged := mergeWriter(appenderWriters...)
 	writers[name] = merged
 	return merged
 }

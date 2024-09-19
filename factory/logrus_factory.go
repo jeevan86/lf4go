@@ -46,7 +46,7 @@ func (lf *LogrusLoggerFactory) setLevel(name string, level logrus.Level) *logrus
 
 func (lf *LogrusLoggerFactory) getLevels(prefix string) map[string]string {
 	levels := make(map[string]string, 16)
-	if "ROOT" == strings.ToUpper(prefix) {
+	if "ROOT" == strings.ToUpper(prefix) || "" == prefix {
 		for k, logger := range loggers {
 			levels[k] = logLevelName(logger.Config.Level)
 		}
@@ -61,7 +61,7 @@ func (lf *LogrusLoggerFactory) getLevels(prefix string) map[string]string {
 }
 
 func (lf *LogrusLoggerFactory) setLevels(prefix string, level string) {
-	if "ROOT" == strings.ToUpper(prefix) {
+	if "ROOT" == strings.ToUpper(prefix) || "" == prefix {
 		for _, logger := range loggers {
 			lf.setLoggerLevel(logger, level)
 		}
